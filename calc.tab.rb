@@ -7,13 +7,23 @@
 require 'racc/parser.rb'
 
 # $Id: calc.y,v 1.4 2005/11/20 13:29:32 aamine Exp $
-	$iden = []
+
 class Calcp < Racc::Parser
 
-module_eval(<<'...end calc.y/module_eval...', 'calc.y', 102)
+module_eval(<<'...end calc.y/module_eval...', 'calc.y', 103)
 
 attr_accessor:q
+attr_reader:funs
 
+   def initialize
+	@iden = []
+	@funs = {}   
+   end
+   
+   def append_fun_def(fun_def)
+	@funs[fun_def[1]] = fun_def
+   end
+  
   def parse(str)
     @q = []
     until str.empty?
@@ -37,7 +47,7 @@ attr_accessor:q
 
   def next_token
 	tmp = @q.shift
-	$iden<<tmp
+	@iden<<tmp
 	tmp
   end
 
@@ -206,28 +216,29 @@ Racc_debug_parser = false
 
 module_eval(<<'.,.,', 'calc.y', 15)
   def _reduce_1(val, _values, result)
-    		$iden.clear
+    		@iden.clear
+		append_fun_def(val[0])
 	
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'calc.y', 19)
+module_eval(<<'.,.,', 'calc.y', 20)
   def _reduce_2(val, _values, result)
-    		$iden.clear
+    		@iden.clear
 	
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'calc.y', 21)
+module_eval(<<'.,.,', 'calc.y', 22)
   def _reduce_3(val, _values, result)
      result = 0 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'calc.y', 27)
+module_eval(<<'.,.,', 'calc.y', 28)
   def _reduce_4(val, _values, result)
     		result = [:def,val[1], [:arg],val[2]]
 	
@@ -236,7 +247,7 @@ module_eval(<<'.,.,', 'calc.y', 27)
   end
 .,.,
 
-module_eval(<<'.,.,', 'calc.y', 32)
+module_eval(<<'.,.,', 'calc.y', 33)
   def _reduce_5(val, _values, result)
     		result = [:def, val[1], [:arg,val[3]],val[5]]
 	
@@ -244,7 +255,7 @@ module_eval(<<'.,.,', 'calc.y', 32)
   end
 .,.,
 
-module_eval(<<'.,.,', 'calc.y', 36)
+module_eval(<<'.,.,', 'calc.y', 37)
   def _reduce_6(val, _values, result)
     		result = [:def, val[1], [:arg,val[3],val[5]], val[7]]
 	
@@ -252,7 +263,7 @@ module_eval(<<'.,.,', 'calc.y', 36)
   end
 .,.,
 
-module_eval(<<'.,.,', 'calc.y', 42)
+module_eval(<<'.,.,', 'calc.y', 43)
   def _reduce_7(val, _values, result)
     		result = [:add,val[0],val[2]]
 	
@@ -260,7 +271,7 @@ module_eval(<<'.,.,', 'calc.y', 42)
   end
 .,.,
 
-module_eval(<<'.,.,', 'calc.y', 46)
+module_eval(<<'.,.,', 'calc.y', 47)
   def _reduce_8(val, _values, result)
     		result = [:sub,val[0],val[2]]
 	
@@ -268,7 +279,7 @@ module_eval(<<'.,.,', 'calc.y', 46)
   end
 .,.,
 
-module_eval(<<'.,.,', 'calc.y', 50)
+module_eval(<<'.,.,', 'calc.y', 51)
   def _reduce_9(val, _values, result)
     		result = [:mul,val[0],val[2]]
 	
@@ -276,7 +287,7 @@ module_eval(<<'.,.,', 'calc.y', 50)
   end
 .,.,
 
-module_eval(<<'.,.,', 'calc.y', 54)
+module_eval(<<'.,.,', 'calc.y', 55)
   def _reduce_10(val, _values, result)
     		result = [:div,val[0],val[2]]
 	
@@ -284,7 +295,7 @@ module_eval(<<'.,.,', 'calc.y', 54)
   end
 .,.,
 
-module_eval(<<'.,.,', 'calc.y', 58)
+module_eval(<<'.,.,', 'calc.y', 59)
   def _reduce_11(val, _values, result)
     		result = [:bitand,val[0],val[2]]
 	
@@ -292,7 +303,7 @@ module_eval(<<'.,.,', 'calc.y', 58)
   end
 .,.,
 
-module_eval(<<'.,.,', 'calc.y', 62)
+module_eval(<<'.,.,', 'calc.y', 63)
   def _reduce_12(val, _values, result)
     		result = [:bitor, val[0],val[2]]
 	
@@ -300,7 +311,7 @@ module_eval(<<'.,.,', 'calc.y', 62)
   end
 .,.,
 
-module_eval(<<'.,.,', 'calc.y', 67)
+module_eval(<<'.,.,', 'calc.y', 68)
   def _reduce_13(val, _values, result)
     		result = val[1]
 	
@@ -308,7 +319,7 @@ module_eval(<<'.,.,', 'calc.y', 67)
   end
 .,.,
 
-module_eval(<<'.,.,', 'calc.y', 71)
+module_eval(<<'.,.,', 'calc.y', 72)
   def _reduce_14(val, _values, result)
     		result = [:lit,val[0]]
 	
@@ -316,9 +327,9 @@ module_eval(<<'.,.,', 'calc.y', 71)
   end
 .,.,
 
-module_eval(<<'.,.,', 'calc.y', 76)
+module_eval(<<'.,.,', 'calc.y', 77)
   def _reduce_15(val, _values, result)
-    		if $iden[0..-3].include? [:NAME, val[0]]
+    		if @iden[0..-3].include? [:NAME, val[0]]
 			result = [:val,val[0]]
 		else
 			result = [:call, val[0],[:arg]]
@@ -329,7 +340,7 @@ module_eval(<<'.,.,', 'calc.y', 76)
   end
 .,.,
 
-module_eval(<<'.,.,', 'calc.y', 85)
+module_eval(<<'.,.,', 'calc.y', 86)
   def _reduce_16(val, _values, result)
     		result = [:call , val[0], [:arg, val[2]]]
 	
@@ -337,7 +348,7 @@ module_eval(<<'.,.,', 'calc.y', 85)
   end
 .,.,
 
-module_eval(<<'.,.,', 'calc.y', 89)
+module_eval(<<'.,.,', 'calc.y', 90)
   def _reduce_17(val, _values, result)
     		result = [:call, val[0], [:arg, val[2], val[4]]]
 	
@@ -353,7 +364,6 @@ end   # class Calcp
 
 
 $funs = {}
-$calls=[]
 class Executer
 	
 	def initialize(call_def)
@@ -404,7 +414,7 @@ class Executer
 			when :mul
 				return  eval(exp[1])  *  eval(exp[2]) 
 			when :div 
-				return  eval(exp[1])  *  eval(exp[2]) 
+				return  eval(exp[1])  /  eval(exp[2]) 
 			when :bitand
 				return  eval(exp[1])  &  eval(exp[2]) 
 			when :bitor
@@ -425,54 +435,33 @@ class Executer
 	end
 end
 
-parser = Calcp.new
-str =     "
-define A 1;
-define B 2*4;
-define C(x) x;
-define D(x) x+1;
-define E(x) x+3+A;
-define F(x) x+3+D(x);
-define G(x) (D(x)+C(x))*2;
-define H(x) A*B*C(x);
-define I(x) D(C(A));
-define J(x) D(A+B+C(x));
-define JJ(x) D(A+B+C(1));
-define J1    2;
-define K(x,y)    J1*B+C(x)+D(y);
-define K1(x,y)   K(A,B);
-define K2(x,y)   K(C(x),D(y));
-define K3(x,y)   K(1+A,C(x+y)+1);
-A;B;C(1);D(1);E(1);F(1);G(1);
-H(1);G(1);J(1);JJ(1);J1;
-K(1,2);K1(1,2);K2(1,2);K3(1,2);
+class MacroParser
+	def initialize
+		@parser = Calcp.new
+		$funs.clear
+	end
+	
+	def parse(str_exp)
+		@parser.parse(str_exp)
 
-
-"
- begin
-	tmp = str.split ";"
-	tmp.each do |i|
-		tmp = parser.parse(i)
-		case tmp[0]
-			when :def
-			$funs[tmp[1]] = tmp
-			when :call
-			$calls<<tmp
+	end
+	
+	def split_parse(str,splitter=";")
+		str.split(splitter).each do |i|
+			@parser.parse(i)
 		end
 		
 	end
 	
- rescue ParseError
-    puts $!
- end
-
-p $funs
-p $calls
-
-
-$calls.each do |i|
-	p Executer.new(i).exe
-end
-
-
+	def exe(str_exe)
+		fun_def = @parser.parse(str_exe)
+		$funs = @parser.funs
+		Executer.new(fun_def).exe
+	end
 	
+	def show
+		$funs.each do |i|
+			p i
+		end
+	end
+end

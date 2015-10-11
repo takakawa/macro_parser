@@ -13,11 +13,12 @@ class Calcp
 rule
   target: macro_def 
 	{
-		$iden.clear
+		@iden.clear
+		append_fun_def(val[0])
 	}
 	| exp 
 	{
-		$iden.clear
+		@iden.clear
 	}
         | /* none */ { result = 0 }
 	
@@ -74,7 +75,7 @@ macro_def : DEFINE NAME exp
      |	NAME
 	{
 
-		if $iden[0..-3].include? [:NAME, val[0]]
+		if @iden[0..-3].include? [:NAME, val[0]]
 			result = [:val,val[0]]
 		else
 			result = [:call, val[0],[:arg]]
@@ -97,11 +98,21 @@ end
 
 ---- header
 # $Id: calc.y,v 1.4 2005/11/20 13:29:32 aamine Exp $
-	$iden = []
+
 ---- inner
 
 attr_accessor:q
+attr_reader:funs
 
+   def initialize
+	@iden = []
+	@funs = {}   
+   end
+   
+   def append_fun_def(fun_def)
+	@funs[fun_def[1]] = fun_def
+   end
+  
   def parse(str)
     @q = []
     until str.empty?
@@ -125,14 +136,13 @@ attr_accessor:q
 
   def next_token
 	tmp = @q.shift
-	$iden<<tmp
+	@iden<<tmp
 	tmp
   end
 
 ---- footer
 
 $funs = {}
-$calls=[]
 class Executer
 	
 	def initialize(call_def)
@@ -183,7 +193,7 @@ class Executer
 			when :mul
 				return  eval(exp[1])  *  eval(exp[2]) 
 			when :div 
-				return  eval(exp[1])  *  eval(exp[2]) 
+				return  eval(exp[1])  /  eval(exp[2]) 
 			when :bitand
 				return  eval(exp[1])  &  eval(exp[2]) 
 			when :bitor
@@ -204,55 +214,34 @@ class Executer
 	end
 end
 
-parser = Calcp.new
-str =     "
-define A 1;
-define B 2*4;
-define C(x) x;
-define D(x) x+1;
-define E(x) x+3+A;
-define F(x) x+3+D(x);
-define G(x) (D(x)+C(x))*2;
-define H(x) A*B*C(x);
-define I(x) D(C(A));
-define J(x) D(A+B+C(x));
-define JJ(x) D(A+B+C(1));
-define J1    1;
-define J1    2;
-define K(x,y)    J1*B+C(x)+D(y);
-define K1(x,y)   K(A,B);
-define K2(x,y)   K(C(x),D(y));
-define K3(x,y)   K(1+A,C(x+y)+1);
-A;B;C(1);D(1);E(1);F(1);G(1);
-H(1);G(1);J(1);JJ(1);J1;
-K(1,2);K1(1,2);K2(1,2);K3(1,2);
+class MacroParser
+	def initialize
+		@parser = Calcp.new
+		$funs.clear
+	end
+	
+	def parse(str_exp)
+		@parser.parse(str_exp)
 
-
-"
- begin
-	tmp = str.split ";"
-	tmp.each do |i|
-		tmp = parser.parse(i)
-		case tmp[0]
-			when :def
-			$funs[tmp[1]] = tmp
-			when :call
-			$calls<<tmp
+	end
+	
+	def split_parse(str,splitter=";")
+		str.split(splitter).each do |i|
+			@parser.parse(i)
 		end
 		
 	end
 	
- rescue ParseError
-    puts $!
- end
-
-p $funs
-p $calls
-
-
-$calls.each do |i|
-	p Executer.new(i).exe
+	def exe(str_exe)
+		fun_def = @parser.parse(str_exe)
+		$funs = @parser.funs
+		Executer.new(fun_def).exe
+	end
+	
+	def show
+		$funs.each do |i|
+			p i
+		end
+	end
 end
 
-
-	
