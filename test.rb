@@ -15,6 +15,17 @@ class MacroParserTest < Test::Unit::TestCase
 		assert_equal(ret, 13)	
 		
 	end
+	
+	def test_hex_numer
+		parser = MacroParser.new
+		parser.parse("define A (0x11+0x1+10)*0x2")
+		parser.parse("define B(x0)  A+0x0*0x2+0x2*x0")
+		ret = parser.exe("A")
+		assert_equal(ret, 56)
+		ret = parser.exe("B((0x1+0x5)/2)")
+		assert_equal(ret, 62)
+	end
+	
 	def test_1_para
 		parser = MacroParser.new
 		parser.parse("define A(x) 3*((x+1)/2)*x*x")
@@ -33,9 +44,9 @@ class MacroParserTest < Test::Unit::TestCase
 	def test_deep_call
 		parser = MacroParser.new
 		parser.split_parse("define A(x) x+1;define B(b) b+1;define C(a) a+1;define D(mmmm) mmmm+1;
-					   define E(av) av+1;define H(ca0) ca0+1;define I(_1a) _1a+1;define Z(z) I(H(E(D(C(A(B(z)))))))")			   
+					   define E(av) av+1;define H(ca0) ca0+1;define I(_1a) _1a+1;define Z(z) I(H(E(D(C(A(1+B(z)+1))))))")			   
 		ret = parser.exe("Z(2)")
-		assert_equal(ret, 9)
+		assert_equal(ret, 11)
 	end	
 	
 end

@@ -31,11 +31,14 @@ attr_reader:funs
 	when /\A\s+/
 	when /define/
 		@q.push [:DEFINE,$&]
+	when /\A0[xX][a-fA-F0-9]+/
+		@q.push [:NUMBER,$&.to_i(16)]
 	when /\A[a-zA-Z_]+[a-zA-Z_0-9]*|\n/o
 		s = $&
 		@q.push [:NAME, s.to_sym]
 	when /\A\d+/
 		@q.push [:NUMBER, $&.to_i]
+
 	when /\A./
 		@q.push [$&,$&]
       end
