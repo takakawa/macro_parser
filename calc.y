@@ -37,8 +37,19 @@ macro_def : DEFINE NAME exp
 	{
 		result = [:def, val[1], [:arg,val[3],val[5]], val[7]]
 	}
+	|DEFINE NAME '(' NAME ',' NAME ',' NAME ')' exp
+	{
+		result = [:def, val[1], [:arg,val[3],val[5], val[7]],val[9]]
+	}
+	|DEFINE NAME '(' NAME ',' NAME ',' NAME ',' NAME ')' exp
+	{
+		result = [:def, val[1], [:arg,val[3],val[5], val[7],val[9]],val[11]]
+	}
+	|DEFINE NAME '(' NAME ',' NAME ','NAME ',' NAME ',' NAME ')' exp
+	{
+		result = [:def, val[1], [:arg,val[3],val[5], val[7],val[9],val[11]],val[13]]
+	}	
 
-	
   exp: exp '+' exp
 	{
 		result = [:add,val[0],val[2]]
@@ -59,39 +70,70 @@ macro_def : DEFINE NAME exp
 	{
 		result = [:bitand,val[0],val[2]]
 	}
+     | exp '>' exp
+	{
+		result = [:>,val[0],val[2]]
+	}
+     | exp '<' exp
+	{
+		result = [:<,val[0],val[2]]
+	}
+     | exp GREATEQ exp
+	{
+		result = [:ge,val[0],val[2]]
+	}
+     | exp LESSEQ exp
+	{
+		result = [:le,val[0],val[2]]
+	}
+     | exp EQUA exp
+	{
+		result = [:eq,val[0],val[2]]
+	}
     | exp '|' exp
 	{
 		result = [:bitor, val[0],val[2]]
 	}
-
-     | '(' exp ')' 	
+    | exp '?' exp ':' exp
+	{
+		result = [:orand3,val[0],val[2],val[4]]
+	}
+    | '(' exp ')' 	
 	{
 		result = val[1]
 	}
-     | NUMBER
+    | NUMBER
 	{
 		result = [:lit,val[0]]
 	}
-     |	NAME
+    |	NAME
 	{
-
 		if @iden[0..-3].include? [:NAME, val[0]]
 			result = [:val,val[0]]
 		else
 			result = [:call, val[0],[:arg]]
 		end
-
 	}
     | NAME '(' exp')'
 	{
-		result = [:call , val[0], [:arg, val[2]]]
+		result = [:call, val[0], [:arg, val[2]]]
 	}
     | NAME '(' exp ',' exp ')'
 	{
 		result = [:call, val[0], [:arg, val[2], val[4]]]
 	}
-     
-
+   | NAME '(' exp ',' exp ',' exp ')'
+	{
+		result = [:call, val[0], [:arg, val[2], val[4],val[6]]]
+	}
+   | NAME '(' exp ',' exp ',' exp ',' exp ')'
+	{
+		result = [:call, val[0], [:arg, val[2], val[4],val[6],val[8]]]
+	}
+   | NAME '(' exp ',' exp ',' exp ',' exp ',' exp')'
+	{
+		result = [:call, val[0], [:arg, val[2], val[4],val[6],val[8],val[10]]]
+	}
 	
      
 end
@@ -127,7 +169,12 @@ attr_reader:funs
 		@q.push [:NAME, s.to_sym]
 	when /\A\d+/
 		@q.push [:NUMBER, $&.to_i]
-
+	when /\A>=/
+		@q.push [:GREATEQ,$&]
+	when /\A<=/
+		@q.push [:LESSEQ,$&]
+	when /\A==/
+		@q.push [:EQUA,$&]
 	when /\A./
 		@q.push [$&,$&]
       end
@@ -201,6 +248,19 @@ class Executer
 				return  eval(exp[1])  &  eval(exp[2]) 
 			when :bitor
 				return  eval(exp[1])  |  eval(exp[2]) 
+			when :>
+				return  (eval(exp[1])  >  eval(exp[2]))
+			when :<
+				return  (eval(exp[1])  <  eval(exp[2]))
+			when :ge
+				return  (eval(exp[1])  >=  eval(exp[2]))
+			when :le
+				return  (eval(exp[1])  <=  eval(exp[2])) 
+			when :eq
+				return  (eval(exp[1])  ==  eval(exp[2]))
+			when :orand3
+				return  (eval(exp[1])  ? eval(exp[2])  : eval(exp[3]))
+
 			when :call
 				return  Executer.new(exp).exe
 		end

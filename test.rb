@@ -32,6 +32,10 @@ class MacroParserTest < Test::Unit::TestCase
 		ret = parser.exe("A(4)")
 		assert_equal(ret, 96)
 		
+		parser.parse("define z(x) x")
+		ret = parser.exe("z(4)")
+		assert_equal(ret, 4)
+		
 		parser.parse("define B(x) A(x)+(A(4)/4)+1")
 		ret = parser.exe("B(4)")
 		assert_equal(ret, 121)
@@ -41,6 +45,96 @@ class MacroParserTest < Test::Unit::TestCase
 		assert_equal(ret, 25)
 	end
 	
+	def test_logic_op
+		parser = MacroParser.new
+		parser.parse("define A(x,y) x>y")
+		ret = parser.exe("A(4,5)")
+		assert_equal(ret, false)
+		ret = parser.exe("A(5,4)")
+		assert_equal(ret, true)
+		ret = parser.exe("A(4,4)")
+		assert_equal(ret, false)
+
+
+		parser.parse("define A(x,y) x>=y")
+		ret = parser.exe("A(4,5)")
+		assert_equal(ret, false)
+		ret = parser.exe("A(5,4)")
+		assert_equal(ret, true)
+		ret = parser.exe("A(4,4)")
+		assert_equal(ret, true)
+
+		parser.parse("define A(x,y) x<y")
+		ret = parser.exe("A(4,5)")
+		assert_equal(ret, true)
+		ret = parser.exe("A(5,4)")
+		assert_equal(ret, false)
+		ret = parser.exe("A(4,4)")
+		assert_equal(ret, false)
+
+		parser.parse("define A(x,y) x<=y")
+		ret = parser.exe("A(4,5)")
+		assert_equal(ret, true)
+		ret = parser.exe("A(5,4)")
+		assert_equal(ret, false)
+		ret = parser.exe("A(4,4)")
+		assert_equal(ret, true)
+
+		parser.parse("define A(x,y) x==y")
+		ret = parser.exe("A(4,5)")
+		assert_equal(ret, false)
+		ret = parser.exe("A(4,4)")
+		assert_equal(ret, true)
+	end
+	
+	def test_2_para
+		parser = MacroParser.new
+		parser.parse("define A(x,y) (x*x+y/y+1)")
+		ret = parser.exe("A(4,(1+4))")
+		assert_equal(ret, 18)
+		
+		parser.split_parse("define A1(x) x*x;define A2(x,y) 1*A1(x)+1*A1(y)+0/5*8")
+		ret = parser.exe("A2(2,3)")
+		assert_equal(ret, 13)
+
+		parser.split_parse("define B1(x) x+1;define B2(x,y) x+y;define B3(x,y) B2(x,x)+B2(B1(x),B1(y+x)+1)")
+		ret = parser.exe("B3(2,3)")
+		assert_equal(ret, 14)
+	end
+	
+	def test_3_para
+		parser = MacroParser.new
+		parser.parse("define A(x,y,z) (x+(y+z)*1)")
+		ret = parser.exe("A(4,5,1)")
+		assert_equal(ret, 10)
+		
+		parser.split_parse("define A1(x) x*x;define A2(x,y) x/y + x*y")
+		parser.split_parse("define B(a,b,c) A2(a,b)+A1(c);define B2(x,a,b) B(a,b,x)")
+		ret = parser.exe("B(1,2,3)")
+		assert_equal(ret, 11)
+		ret = parser.exe("B2(1,2,3)")
+		assert_equal(ret, 7)
+	end
+	
+	def test_4_para
+		parser = MacroParser.new
+		parser.parse("define A(x,y,z,m) x*y+z/m")
+		ret = parser.exe("A(4,5,4,2)")
+		assert_equal(ret, 22)
+		
+		parser.split_parse("define B(x) x;define C(x,y) x;define D(x,y,z) x;define AA(a,b,c,d) D(B(A(4,5,4,2)),C(b,c),1)+1+C(b,c)+D(a,b,c)")
+		ret = parser.exe("AA(4,5,4,2)")
+		assert_equal(ret, 22+1+5+4)
+		
+	end
+	
+	def test_5_para
+		parser = MacroParser.new
+		parser.parse("define A(x,y,z,m,kk) x*y+z/m+kk")
+		ret = parser.exe("A(4,5,4,2,10)")
+		assert_equal(ret, 32)
+	end		
+	
 	def test_deep_call
 		parser = MacroParser.new
 		parser.split_parse("define A(x) x+1;define B(b) b+1;define C(a) a+1;define D(mmmm) mmmm+1;
@@ -48,6 +142,19 @@ class MacroParserTest < Test::Unit::TestCase
 		ret = parser.exe("Z(2)")
 		assert_equal(ret, 11)
 	end	
+	
+	def test_3operator
+		parser = MacroParser.new	
+		parser.parse("define A 1?0:2")
+		ret = parser.exe("A")
+		assert_equal(ret, 0)
+		
+		parser.split_parse("define AA(x,y) x>y;define max(a,b) (a > b) ? a : b")
+		ret = parser.exe("max(2,5)")
+		assert_equal(ret, 5)		
+		
+	end
+	
 	
 end
 Test::Unit::UI::Console::TestRunner.run(MacroParserTest)
