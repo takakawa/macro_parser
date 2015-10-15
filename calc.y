@@ -7,17 +7,20 @@ class Calcp
     nonassoc UMINUS
     left '*' '/' '%' '^'
     left '+' '-'
-    left '&' '|' '&&' '||' '~'
-    left '<' '>'
+    left '&' '|'  '~'
+    left '<' '>'  GREATEQ LESSEQ EQUA LOGIC_AND LOGIC_OR NO_EQ
+    left ':' '?'
   preclow
 rule
   target: macro_def 
 	{
+		
 		@iden.clear
 		append_fun_def(val[0])
 	}
 	| exp 
 	{
+	
 		@iden.clear
 	}
         | /* none */ { result = 0 }
@@ -66,6 +69,10 @@ macro_def : DEFINE NAME exp
 	{
 		result = [:div,val[0],val[2]]
 	}
+     | exp '%' exp
+	{
+		result = [:mod,val[0],val[2]]
+	}     
      | exp '&' exp
 	{
 		result = [:bitand,val[0],val[2]]
@@ -90,9 +97,21 @@ macro_def : DEFINE NAME exp
 	{
 		result = [:eq,val[0],val[2]]
 	}
+    | exp NO_EQ exp
+	{
+		result = [:no_eq,val[0],val[2]]
+	}
     | exp '|' exp
 	{
 		result = [:bitor, val[0],val[2]]
+	}
+    | exp LOGIC_AND exp
+	{
+		result = [:logic_and,val[0],val[2]]
+	}
+    | exp LOGIC_OR exp
+	{
+		result = [:logic_or,val[0],val[2]]
 	}
     | exp '?' exp ':' exp
 	{
@@ -108,11 +127,13 @@ macro_def : DEFINE NAME exp
 	}
     |	NAME
 	{
+
 		if @iden[0..-3].include? [:NAME, val[0]]
 			result = [:val,val[0]]
 		else
 			result = [:call, val[0],[:arg]]
 		end
+		
 	}
     | NAME '(' exp')'
 	{
@@ -160,7 +181,7 @@ attr_reader:funs
     until str.empty?
       case str
 	when /\A\s+/
-	when /define/
+	when /\Adefine/
 		@q.push [:DEFINE,$&]
 	when /\A0[xX][a-fA-F0-9]+/
 		@q.push [:NUMBER,$&.to_i(16)]
@@ -175,9 +196,15 @@ attr_reader:funs
 		@q.push [:LESSEQ,$&]
 	when /\A==/
 		@q.push [:EQUA,$&]
+	when /\A!=/
+		@q.push [:NO_EQ,$&]
+	when /\A&&/
+		@q.push [:LOGIC_AND,$&]
+	when /\A\|\|/
+		@q.push [:LOGIC_OR,$&]
 	when /\A./
 		@q.push [$&,$&]
-      end
+	end
       str = $'
     end
     @q.push [false, '$end']
@@ -246,21 +273,34 @@ class Executer
 				return  eval(exp[1])  /  eval(exp[2]) 
 			when :bitand
 				return  eval(exp[1])  &  eval(exp[2]) 
+			when :mod
+				return eval(exp[1]) % eval(exp[2])
 			when :bitor
 				return  eval(exp[1])  |  eval(exp[2]) 
 			when :>
 				return  (eval(exp[1])  >  eval(exp[2]))
 			when :<
-				return  (eval(exp[1])  <  eval(exp[2]))
+				return  (eval(exp[1])  <  eval(exp[2])) 
 			when :ge
-				return  (eval(exp[1])  >=  eval(exp[2]))
+				return  (eval(exp[1])  >=  eval(exp[2])) 
 			when :le
 				return  (eval(exp[1])  <=  eval(exp[2])) 
 			when :eq
-				return  (eval(exp[1])  ==  eval(exp[2]))
+				return  (eval(exp[1])  ==  eval(exp[2])) 
+			when :no_eq
+				return (eval(exp[1]) != eval(exp[2])) 
+			when :logic_and
+				return  eval(exp[1]) && eval(exp[2])
+			when :logic_or
+				return  eval(exp[1]) || eval(exp[2])
 			when :orand3
-				return  (eval(exp[1])  ? eval(exp[2])  : eval(exp[3]))
-
+				val = eval(exp[1])
+				case val
+					when Fixnum
+						return  (val == 0) ? eval(exp[3]) : eval(exp[2])
+					when true,false
+						return  val  ? eval(exp[2])  : eval(exp[3])
+				end
 			when :call
 				return  Executer.new(exp).exe
 		end

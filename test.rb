@@ -9,11 +9,26 @@ class MacroParserTest < Test::Unit::TestCase
 		parser.parse("define A (((1+1)+2)+3)/2*2")
 		ret = parser.exe("A")
 		assert_equal(ret, 6)
-		
+
 		parser.parse("define A 1+2*3+(20+15)/5 -1")
 		ret = parser.exe("A")
 		assert_equal(ret, 13)	
 		
+		parser.parse("define A 5%(2+1)")
+		ret = parser.exe("A")
+		assert_equal(ret,2)
+
+		parser.parse("define A 2|1")
+		ret = parser.exe("A")
+		assert_equal(ret,3)
+
+		parser.parse("define A 1&2")
+		ret = parser.exe("A")
+		assert_equal(ret,0)
+		
+		parser.parse("define A 1&&0")
+		ret = parser.exe("A")
+		assert_equal(ret,false)		
 	end
 	
 	def test_hex_numer
@@ -54,7 +69,6 @@ class MacroParserTest < Test::Unit::TestCase
 		assert_equal(ret, true)
 		ret = parser.exe("A(4,4)")
 		assert_equal(ret, false)
-
 
 		parser.parse("define A(x,y) x>=y")
 		ret = parser.exe("A(4,5)")
@@ -145,16 +159,26 @@ class MacroParserTest < Test::Unit::TestCase
 	
 	def test_3operator
 		parser = MacroParser.new	
-		parser.parse("define A 1?0:2")
+		parser.split_parse("define A 1?0:2;define B 1>2 ? 100 : 1000")
 		ret = parser.exe("A")
 		assert_equal(ret, 0)
+		ret = parser.exe("B")
+		assert_equal(ret, 1000)
 		
-		parser.split_parse("define AA(x,y) x>y;define max(a,b) (a > b) ? a : b")
+		parser.split_parse("define max(a,b) (a > b) ? a : b;define max3(a,b,c) max(max(a,b),c)")
 		ret = parser.exe("max(2,5)")
-		assert_equal(ret, 5)		
+		assert_equal(ret, 5)
+		ret = parser.exe("max3(200,50,400)")
+		assert_equal(ret, 400)		
 		
 	end
-	
+
+	def test_0
+		parser = MacroParser.new	
+		parser.split_parse("define A 1;define B A+A")
+		ret = parser.exe("B")
+		assert_equal(ret, 2)
+	end
 	
 end
 Test::Unit::UI::Console::TestRunner.run(MacroParserTest)
