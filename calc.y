@@ -10,24 +10,26 @@ class Calcp
     left '&' '|'  '~'
     left '<' '>'  GREATEQ LESSEQ EQUA LOGIC_AND LOGIC_OR NO_EQ
     left ':' '?'
+    left '(' ')'
   preclow
 rule
   target: macro_def 
 	{
-		
 		@iden.clear
 		append_fun_def(val[0])
 	}
 	| exp 
 	{
-	
 		@iden.clear
 	}
-        | /* none */ { result = 0 }
+        | /* none */ 
+	{ 
+		result = 0 
+	}
 	
 
 
-macro_def : DEFINE NAME exp
+macro_def : DEFINE  NAME exp
 	{
 		result = [:def,val[1], [:arg],val[2]]
 	
@@ -127,13 +129,11 @@ macro_def : DEFINE NAME exp
 	}
     |	NAME
 	{
-
-		if @iden[0..-3].include? [:NAME, val[0]]
-			result = [:val,val[0]]
-		else
-			result = [:call, val[0],[:arg]]
-		end
-		
+			if @cmd_arg.include? val[0].to_s
+				result = [:val,val[0]]
+			else
+				result = [:call,val[0],[:arg]]
+			end
 	}
     | NAME '(' exp')'
 	{
@@ -178,6 +178,8 @@ attr_reader:funs
   
   def parse(str)
     @q = []
+    @cmd_arg=[]
+    flag = true
     until str.empty?
       case str
 	when /\A\s+/
@@ -204,6 +206,27 @@ attr_reader:funs
 		@q.push [:LOGIC_OR,$&]
 	when /\A./
 		@q.push [$&,$&]
+	end
+
+	if flag
+		if $& == "("
+			cmd_arg_start = true
+		elsif $& == ")"
+			cmd_arg_start = false
+			flag = false
+		end
+		
+		if cmd_arg_start
+			if ["+","-","*","/","%","&&","&","==","|","||",">",">=","<","<=",":","?"].include? $&
+				@cmd_arg = []
+				flag = false
+			elsif ($& == "("  and @cmd_arg.include? "(")
+				@cmd_arg = []
+				flag = false
+			else
+				@cmd_arg << $&
+			end
+		end
 	end
       str = $'
     end
@@ -324,13 +347,18 @@ class MacroParser
 	end
 	
 	def parse(str_exp)
-		@parser.parse(str_exp)
+		case str_exp
+			when  /\A\s*define\s+([a-zA-Z_]+\w*)\s+\(([a-zA-Z_]+\w*)\)\s*\Z/
+				@parser.funs[$1.to_sym] =  [:def, $1.to_sym, [:arg],[:call,$2.to_sym,[:arg]]]
+			else
+				@parser.parse(str_exp)
+		end
 
 	end
 	
 	def split_parse(str,splitter=";")
 		str.split(splitter).each do |i|
-			@parser.parse(i)
+			parse(i)
 		end
 		
 	end
@@ -342,7 +370,7 @@ class MacroParser
 	end
 	
 	def show
-		$funs.each do |i|
+		@parser.funs.each do |i|
 			p i
 		end
 	end

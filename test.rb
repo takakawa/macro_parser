@@ -28,7 +28,7 @@ class MacroParserTest < Test::Unit::TestCase
 		
 		parser.parse("define A 1&&0")
 		ret = parser.exe("A")
-		assert_equal(ret,false)		
+		assert_equal(ret,0)		
 	end
 	
 	def test_hex_numer
@@ -175,11 +175,22 @@ class MacroParserTest < Test::Unit::TestCase
 
 	def test_0
 		parser = MacroParser.new	
-		parser.split_parse("define A 1;define B A+A")
+		parser.split_parse("define A 1;define B ((A)+A)")
 		ret = parser.exe("B")
 		assert_equal(ret, 2)
 	end
 	
+	def test_1
+		parser = MacroParser.new	
+		parser.split_parse("define A 1;define B (A);define C ((A)+B)")
+		ret = parser.exe("B")
+		assert_equal(ret, 1)
+		
+		ret = parser.exe("C")
+		assert_equal(ret, 2)
+	end
+	
 end
-Test::Unit::UI::Console::TestRunner.run(MacroParserTest)
+#Test::Unit::UI::Console::TestRunner.run(MacroParserTest)
+
 
