@@ -26,9 +26,9 @@ class MacroParserTest < Test::Unit::TestCase
 		ret = parser.exe("A")
 		assert_equal(ret,0)
 		
-		parser.parse("define A 1&&0")
+		parser.parse("define A 0xFFFFFFFF&&0x1234")
 		ret = parser.exe("A")
-		assert_equal(ret,0)		
+		assert_equal(ret,0x1234)		
 	end
 	
 	def test_hex_numer
@@ -190,6 +190,26 @@ class MacroParserTest < Test::Unit::TestCase
 		assert_equal(ret, 2)
 	end
 	
+	def test_no_define
+		parser = MacroParser.new	
+		parser.split_parse("define A 1")
+		begin
+			ret = parser.exe("BBBB")
+		rescue => info
+			assert_equal(info.to_s, "BBBB Not Found!")
+		end
+
+	end
+	def test_devide_0
+		parser = MacroParser.new	
+		parser.split_parse("define A(x,y) x/y")
+		begin
+			ret = parser.exe("A(8,0)")
+		rescue => info
+			assert_equal(info.to_s, "divided by 0")
+		end
+
+	end	
 end
 #Test::Unit::UI::Console::TestRunner.run(MacroParserTest)
 

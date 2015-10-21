@@ -664,6 +664,8 @@ class Executer
 		@call_def = call_def
 		@fun_def =$funs[call_def[1]]
 	
+		raise "#{call_def[1]} Not Found!" unless @fun_def
+		
 		args_name =@fun_def[2][1..-1]
 		args_value = call_def[2][1..-1]
 	
@@ -771,8 +773,10 @@ class MacroParser
 	end
 	
 	def split_parse(str,splitter=";")
-		str.split(splitter).each do |i|
-			parse(i)
+		unless str =~/\A[\s\n]*\Z/
+			str.split(splitter).each do |i|
+				parse(i)
+			end
 		end
 		
 	end
