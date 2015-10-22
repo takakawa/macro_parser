@@ -3,15 +3,22 @@
 # Very simple calculater.
 
 class Calcp
+ 
   prechigh
-    nonassoc UMINUS
-    left '*' '/' '%' '^'
+  
+    left LEFT_PAREN RIGHT_PAREN
+    left '*' '/' '%' '~' '!' UMINUS
     left '+' '-'
-    left '&' '|'  '~'
-    left '<' '>'  GREATEQ LESSEQ EQUA LOGIC_AND LOGIC_OR NO_EQ
+    left LEFT_SHIFT RIGHT_SHIFT
+    left '<' '>'  GREATEQ LESSEQ 
+    left  EQUA  NO_EQ
+    left '&' 
+    left '|' 
+    left LOGIC_AND
+    left LOGIC_OR
     left ':' '?'
-    left '(' ')'
-  preclow
+
+ preclow
 rule
   target: macro_def 
 	{
@@ -34,26 +41,38 @@ macro_def : DEFINE  NAME exp
 		result = [:def,val[1], [:arg],val[2]]
 	
 	}
-	| DEFINE NAME '('  NAME')' exp
+	| DEFINE NAME LEFT_PAREN  NAME RIGHT_PAREN exp
 	{
 		result = [:def, val[1], [:arg,val[3]],val[5]]
 	}
-	|DEFINE NAME '(' NAME ',' NAME')' exp
+	|DEFINE NAME LEFT_PAREN NAME ',' NAME RIGHT_PAREN exp
 	{
 		result = [:def, val[1], [:arg,val[3],val[5]], val[7]]
 	}
-	|DEFINE NAME '(' NAME ',' NAME ',' NAME ')' exp
+	|DEFINE NAME LEFT_PAREN NAME ',' NAME ',' NAME RIGHT_PAREN exp
 	{
 		result = [:def, val[1], [:arg,val[3],val[5], val[7]],val[9]]
 	}
-	|DEFINE NAME '(' NAME ',' NAME ',' NAME ',' NAME ')' exp
+	|DEFINE NAME LEFT_PAREN NAME ',' NAME ',' NAME ',' NAME RIGHT_PAREN exp
 	{
 		result = [:def, val[1], [:arg,val[3],val[5], val[7],val[9]],val[11]]
 	}
-	|DEFINE NAME '(' NAME ',' NAME ','NAME ',' NAME ',' NAME ')' exp
+	|DEFINE NAME LEFT_PAREN NAME ',' NAME ','NAME ',' NAME ',' NAME RIGHT_PAREN exp
 	{
 		result = [:def, val[1], [:arg,val[3],val[5], val[7],val[9],val[11]],val[13]]
 	}	
+	|DEFINE NAME LEFT_PAREN NAME ',' NAME ','NAME ',' NAME ',' NAME ',' NAME RIGHT_PAREN exp
+	{
+		result = [:def, val[1], [:arg,val[3],val[5], val[7],val[9],val[11],val[13]],val[15]]
+	}	
+	|DEFINE NAME LEFT_PAREN NAME ',' NAME ','NAME ',' NAME ',' NAME ',' NAME ',' NAME RIGHT_PAREN exp
+	{
+		result = [:def, val[1], [:arg,val[3],val[5], val[7],val[9],val[11],val[13],val[15]],val[17]]
+	}	
+	|DEFINE NAME LEFT_PAREN NAME ',' NAME ','NAME ',' NAME ',' NAME ',' NAME ',' NAME ',' NAME RIGHT_PAREN exp
+	{
+		result = [:def, val[1], [:arg,val[3],val[5], val[7],val[9],val[11],val[13],val[15],val[17]],val[19]]
+	}
 
   exp: exp '+' exp
 	{
@@ -87,6 +106,18 @@ macro_def : DEFINE  NAME exp
 	{
 		result = [:<,val[0],val[2]]
 	}
+     | '-' exp =UMINUS
+	{
+		result = [:UMINUS,val[1]]
+	}
+     | '~' exp
+	{
+		result = [:REVERSE,val[1]]
+	}
+     | '!' exp
+	{
+		result = [:NOT,val[1]]
+	}
      | exp GREATEQ exp
 	{
 		result = [:ge,val[0],val[2]]
@@ -102,6 +133,14 @@ macro_def : DEFINE  NAME exp
     | exp NO_EQ exp
 	{
 		result = [:no_eq,val[0],val[2]]
+	}
+    | exp LEFT_SHIFT exp
+	{
+		result = [:LEFT_SHIFT,val[0],val[2]]
+	}
+    | exp RIGHT_SHIFT exp
+	{
+		result = [:RIGHT_SHIFT,val[0],val[2]]
 	}
     | exp '|' exp
 	{
@@ -119,7 +158,7 @@ macro_def : DEFINE  NAME exp
 	{
 		result = [:orand3,val[0],val[2],val[4]]
 	}
-    | '(' exp ')' 	
+    | LEFT_PAREN exp RIGHT_PAREN 	
 	{
 		result = val[1]
 	}
@@ -135,28 +174,38 @@ macro_def : DEFINE  NAME exp
 				result = [:call,val[0],[:arg]]
 			end
 	}
-    | NAME '(' exp')'
+    | NAME LEFT_PAREN exp RIGHT_PAREN
 	{
 		result = [:call, val[0], [:arg, val[2]]]
 	}
-    | NAME '(' exp ',' exp ')'
+    | NAME LEFT_PAREN exp ',' exp RIGHT_PAREN
 	{
 		result = [:call, val[0], [:arg, val[2], val[4]]]
 	}
-   | NAME '(' exp ',' exp ',' exp ')'
+   | NAME LEFT_PAREN exp ',' exp ',' exp RIGHT_PAREN
 	{
 		result = [:call, val[0], [:arg, val[2], val[4],val[6]]]
 	}
-   | NAME '(' exp ',' exp ',' exp ',' exp ')'
+   | NAME LEFT_PAREN exp ',' exp ',' exp ',' exp RIGHT_PAREN
 	{
 		result = [:call, val[0], [:arg, val[2], val[4],val[6],val[8]]]
 	}
-   | NAME '(' exp ',' exp ',' exp ',' exp ',' exp')'
+   | NAME LEFT_PAREN exp ',' exp ',' exp ',' exp ',' exp RIGHT_PAREN
 	{
 		result = [:call, val[0], [:arg, val[2], val[4],val[6],val[8],val[10]]]
 	}
-	
-     
+   | NAME LEFT_PAREN exp ',' exp ',' exp ',' exp ',' exp ',' exp RIGHT_PAREN
+	{
+		result = [:call, val[0], [:arg, val[2], val[4],val[6],val[8],val[10],val[12]]]
+	}	
+   | NAME LEFT_PAREN exp ',' exp ',' exp ',' exp ',' exp ',' exp ',' exp RIGHT_PAREN
+	{
+		result = [:call, val[0], [:arg, val[2], val[4],val[6],val[8],val[10],val[12],val[14]]]
+	}
+   | NAME LEFT_PAREN exp ',' exp ',' exp ',' exp ',' exp ',' exp ',' exp ',' exp RIGHT_PAREN
+	{
+		result = [:call, val[0], [:arg, val[2], val[4],val[6],val[8],val[10],val[12],val[14],val[16]]]
+	}	
 end
 
 ---- header
@@ -200,10 +249,18 @@ attr_reader:funs
 		@q.push [:EQUA,$&]
 	when /\A!=/
 		@q.push [:NO_EQ,$&]
+	when /\A<</
+		@q.push [:LEFT_SHIFT,$&]
+	when /\A>>/
+		@q.push [:RIGHT_SHIFT,$&]
 	when /\A&&/
 		@q.push [:LOGIC_AND,$&]
 	when /\A\|\|/
 		@q.push [:LOGIC_OR,$&]
+	when /\A\(/
+		@q.push [:LEFT_PAREN,$&]
+	when /\A\)/
+		@q.push [:RIGHT_PAREN,$&]
 	when /\A./
 		@q.push [$&,$&]
 	end
@@ -318,10 +375,26 @@ class Executer
 				return  eval(exp[1]) && eval(exp[2])
 			when :logic_or
 				return  eval(exp[1]) || eval(exp[2])
+			when :LEFT_SHIFT
+				return eval(exp[1]) << eval(exp[2])
+			when :RIGHT_SHIFT
+				return eval(exp[1]) >> eval(exp[2])
+			when :NOT
+				val = eval(exp[1])
+				case val
+					when Fixnum,Bignum
+						return (val==0) ? true : false
+					when true,false
+						return !val
+				end
+			when :REVERSE
+				return ~eval(exp[1])
+			when :UMINUS
+				return  -eval(exp[1])
 			when :orand3
 				val = eval(exp[1])
 				case val
-					when Fixnum
+					when Fixnum,Bignum
 						return  (val == 0) ? eval(exp[3]) : eval(exp[2])
 					when true,false
 						return  val  ? eval(exp[2])  : eval(exp[3])
@@ -359,12 +432,11 @@ class MacroParser
 	end
 	
 	def split_parse(str,splitter=";")
-		unless str =~/\A[\s\n]*\Z/
-			str.split(splitter).each do |i|
+		str.split(splitter).each do |i|
+			unless str =~/\A[\s\n]*\Z/
 				parse(i)
 			end
 		end
-		
 	end
 	
 	def exe(str_exe)

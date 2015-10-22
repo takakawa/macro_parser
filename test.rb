@@ -4,6 +4,47 @@ require_relative "calc.tab.rb"
 
 class MacroParserTest < Test::Unit::TestCase
 	
+	def test_not
+		parser = MacroParser.new
+		parser.split_parse("define A (!0);define B(x) !A ? 10*x : 100+x")
+		ret = parser.exe("A")
+		assert_equal(ret, true)
+		ret = parser.exe("B(1)")
+		assert_equal(ret, 101)
+	end
+	
+	def test_uminus
+		parser = MacroParser.new
+		parser.split_parse("define A -1;define B(x) -A+1-1-A+x+(-x)")
+		ret = parser.exe("A")
+		assert_equal(ret, -1)
+		ret = parser.exe("B(10)")
+		assert_equal(ret, 2)
+	end	
+
+	def test_reverse
+		parser = MacroParser.new
+		parser.split_parse("define A ~0;define B(x) -A+1+((~0xFFFF0000)&x)")
+		ret = parser.exe("A")
+		assert_equal(ret, -1)
+		ret = parser.exe("B(0x12345678)")
+		assert_equal(ret, 0x567A)
+	end	
+	
+	def test_leftshift
+		parser = MacroParser.new
+		parser.split_parse("define A 0x12;define B(x) -((~A)<<x)")
+		ret = parser.exe("B(8)")
+		assert_equal(ret, 4864)
+	end		
+	
+	def test_rightshift
+		parser = MacroParser.new
+		parser.split_parse("define A(n) 0x124&n;define B(x) ((A(0xff)<<x)>>x)<<x")
+		ret = parser.exe("B(8)")
+		assert_equal(ret, 0x2400)
+	end		
+	
 	def test_no_para
 		parser = MacroParser.new
 		parser.parse("define A (((1+1)+2)+3)/2*2")
@@ -149,6 +190,19 @@ class MacroParserTest < Test::Unit::TestCase
 		assert_equal(ret, 32)
 	end		
 	
+	def test_6_para
+		parser = MacroParser.new
+		parser.parse("define A(a1,a2,a3,a4,a5,a6) a1+a2+a3+a4+a5+a6")
+		ret = parser.exe("A(1,2,3,4,5,6)")
+		assert_equal(ret, 21)
+	end	
+	
+	def test_7_para
+		parser = MacroParser.new
+		parser.parse("define A(a1,a2,a3,a4,a5,a6,a7) a1+a2+a3+a4+a5+a6+a7")
+		ret = parser.exe("A(1,2,3,4,5,6,7)")
+		assert_equal(ret, 28)
+	end		
 	def test_deep_call
 		parser = MacroParser.new
 		parser.split_parse("define A(x) x+1;define B(b) b+1;define C(a) a+1;define D(mmmm) mmmm+1;
@@ -159,12 +213,14 @@ class MacroParserTest < Test::Unit::TestCase
 	
 	def test_3operator
 		parser = MacroParser.new	
-		parser.split_parse("define A 1?0:2;define B 1>2 ? 100 : 1000")
+		parser.split_parse("define A 1?0:2;define B 1>2 ? 100 : 1000;define C 0xFFFFFFF ? 1 : 0")
 		ret = parser.exe("A")
 		assert_equal(ret, 0)
 		ret = parser.exe("B")
 		assert_equal(ret, 1000)
-		
+		ret = parser.exe("C")
+		assert_equal(ret, 1)
+
 		parser.split_parse("define max(a,b) (a > b) ? a : b;define max3(a,b,c) max(max(a,b),c)")
 		ret = parser.exe("max(2,5)")
 		assert_equal(ret, 5)
@@ -208,9 +264,25 @@ class MacroParserTest < Test::Unit::TestCase
 		rescue => info
 			assert_equal(info.to_s, "divided by 0")
 		end
-
-	end	
+	end
+	
+	def test_wrong_input
+		parser = MacroParser.new	
+		begin
+			parser.split_parse("666")
+		rescue => info
+			p info.to_s
+		end
+		begin
+			parser.exe("def AAA(()444")
+		rescue => info
+			assert_equal(info.to_s,"\nparse error on value :AAA (NAME)")
+		end
+end		
+	
 end
-#Test::Unit::UI::Console::TestRunner.run(MacroParserTest)
+
+
+
 
 
