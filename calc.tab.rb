@@ -1010,7 +1010,11 @@ class MacroParser
 	def split_parse(str,splitter=";")
 		str.split(splitter).each do |i|
 			unless str =~/\A[\s\n]*\Z/
+			begin
 				parse(i)
+			rescue => info
+				p info
+			end
 			end
 		end
 	end

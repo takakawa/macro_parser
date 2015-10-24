@@ -144,10 +144,13 @@ class MacroParserTest < Test::Unit::TestCase
 	
 	def test_2_para
 		parser = MacroParser.new
-		parser.parse("define A(x,y) (x*x+y/y+1)")
+		parser.split_parse("define A(x,y) (x*x+y/y+1);define B(x) A(4,(1+4))+A(x,x+1)")
 		ret = parser.exe("A(4,(1+4))")
 		assert_equal(ret, 18)
-		
+
+		ret = parser.exe("B(4)")
+		assert_equal(ret, 36)
+	
 		parser.split_parse("define A1(x) x*x;define A2(x,y) 1*A1(x)+1*A1(y)+0/5*8")
 		ret = parser.exe("A2(2,3)")
 		assert_equal(ret, 13)
@@ -156,6 +159,7 @@ class MacroParserTest < Test::Unit::TestCase
 		ret = parser.exe("B3(2,3)")
 		assert_equal(ret, 14)
 	end
+	
 	
 	def test_3_para
 		parser = MacroParser.new
